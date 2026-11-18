@@ -1,25 +1,8 @@
 use ini::Ini;
-use crate::start_ini::PathEmu;
-pub mod start_ini;
 use std::fs;
 use std::io;
-
-fn init_config(e_path : PathEmu){
-    let mut conf = Ini::new();
-    conf.with_section(None::<String>).set("encoding", "utf-8");
-    let mut section = conf.with_section(Some("Saves"));
-
-    for (emu, path) in &e_path.paths {
-        if let Some(p) = path {
-            section.set(emu.to_string(), p);
-        }
-    }
-    let mut bak_section = conf.with_section(Some("Backup"));
-    if let Some(b) = e_path.bak_path{
-        bak_section.set("bak_path", b);
-    }
-    conf.write_to_file("config.ini").unwrap();
-}
+use autosave::{CONFIG_PATH, init_config};
+use autosave::start_ini::PathEmu;
 
 fn main() -> io::Result<()> {
     let emu_paths = PathEmu::default();
@@ -28,5 +11,29 @@ fn main() -> io::Result<()> {
         Ok(false) => init_config(emu_paths),
         Err(e) => eprintln!("[ERROR]: permission denied or I/O error: {e}"),
     }
+    let conf = Ini::load_from_file(CONFIG_PATH).unwrap();
+    let mut saves_path : Vec<(&str, &str)> = Vec::new();
+    let mut bak_path = String::new();
+    for (sec, prop) in &conf{
+        match sec{
+           Some("Backup") => {
+                for(_, value) in prop.iter(){
+                    bak_path.push_str(value);
+                }    
+           },
+           Some("Saves") => {
+                for(key, value) in prop.iter(){
+                    saves_path.push((key,value));
+                }
+           },
+           None => eprintln!("encoding=utf-8"),
+           _ => eprintln!("[ERROR]: undefined"),
+        };
+    }
+    for (key, value) in saves_path.iter(){
+        println!("{}:{}", key,value); 
+    }
+    println!("{}", bak_path);
+
     Ok(())
 }
