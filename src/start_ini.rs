@@ -33,8 +33,8 @@ impl Default for PathEmu {
     }
 }
 fn get_default_bak() -> Option<String> {
-    let home = env::var("HOME").ok()?;
-    Some(format!("{}", home))
+    let temp = env::temp_dir().join("emu-save-backup").into_string().expect("Unable to create default backup folder in tmp");
+    Some(format!("{}", temp))
 }
 
 fn get_default_path(emu: SupportedEmu) -> Option<String> {

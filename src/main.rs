@@ -1,17 +1,19 @@
 use ini::Ini;
-use std::fs;
+use std::fs::{self};
 use std::io;
-use autosave::{CONFIG_PATH, init_config};
+use std::path::{Path, PathBuf};
+use autosave::{init_config, copy_dir, get_config_path};
 use autosave::start_ini::PathEmu;
 
 fn main() -> io::Result<()> {
     let emu_paths = PathEmu::default();
-    match fs::exists("config.ini"){
+    let config_path = get_config_path().expect("Home not defined");
+    match fs::exists(&config_path){
         Ok(true) => println!("[LOG]: Config file exists"),
         Ok(false) => init_config(emu_paths),
         Err(e) => eprintln!("[ERROR]: permission denied or I/O error: {e}"),
     }
-    let conf = Ini::load_from_file(CONFIG_PATH).unwrap();
+    let conf = Ini::load_from_file(&config_path).unwrap();
     let mut saves_path : Vec<(&str, &str)> = Vec::new();
     let mut bak_path = String::new();
     for (sec, prop) in &conf{
@@ -26,14 +28,22 @@ fn main() -> io::Result<()> {
                     saves_path.push((key,value));
                 }
            },
-           None => eprintln!("encoding=utf-8"),
+           None => (),
            _ => eprintln!("[ERROR]: undefined"),
         };
     }
-    for (key, value) in saves_path.iter(){
-        println!("{}:{}", key,value); 
+    let mut origins :Vec<PathBuf> = Vec::new();
+    for (_, o_paths) in saves_path{
+        origins.push(PathBuf::from(o_paths));
     }
-    println!("{}", bak_path);
+    let dest = Path::new(&bak_path);
 
+    for orig in &origins{
+        let name_dir = orig.file_name().ok_or_else(||{
+            io::Error::new(io::ErrorKind::InvalidInput, "Invalid name")
+        })?;
+        copy_dir(orig, &dest.join(name_dir))?;
+    }
+    println!("[OK]: SUCESS check {}", bak_path);
     Ok(())
 }
