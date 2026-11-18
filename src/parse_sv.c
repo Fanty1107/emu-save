@@ -1,44 +1,92 @@
 #include "parse_sv.h"
-#include "fylib.h"
-#include <stdlib.h>
 
-//typedef struct{
-//    char *pcsx2;
-//    char *ppsspp;
-//}saves_path;
-//typedef struct{
-//    char *f_back;
-//    char *s_back;
-//}bak_path;
+char *trim(char *s) {
+    while (isspace((unsigned char)*s))
+        s++;
 
-//typedef struct{
-//    saves_path s_paths;
-//    bak_path b_paths;
-//}config_file;
+    char *end = s + strlen(s);
+    while (end > s && isspace((unsigned char)end[-1]))
+        end--;
 
-//content here is the file
+    *end = '\0';
+    return s;
+}
 
-//[saves]
-//pcsx2=/home/fanty/.config/PCSX2/memcards/
-//ppsspp=/home/fanty/.config/ppsspp/PSP/SAVEDATA/
+char *copy_string(const char *s) {
+    size_t len = strlen(s);
+    char *copy = malloc(len + 1);
 
-//[backup]
-//bak_path=/mnt/hd_ext4/backup/saves/
-char* parse_to_saves(char *content_file){
-    size_t ch_count = 0;
-    char *cont_saves = malloc(sizeof(char) * KiB(1));
-    printf("%zu",strlen(content_file));
-    while(ch_count < strlen(content_file)){
+    if (copy)
+        memcpy(copy, s, len + 1);
 
+    return copy;
+}
+
+int load_config(const char *filename, config_file *config) {
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        return 0;
+
+    enum { SECTION_NONE, SECTION_SAVES, SECTION_BACKUP } section = SECTION_NONE;
+    char line[4096];
+    int success = 1;
+
+    while (fgets(line, sizeof line, file)) {
+        char *text = trim(line);
+
+        if (*text == '\0' || *text == '#' || *text == ';')
+            continue;
+
+        if (strcmp(text, "[saves]") == 0) {
+            section = SECTION_SAVES;
+            continue;
+        }
+
+        if (strcmp(text, "[backup]") == 0) {
+            section = SECTION_BACKUP;
+            continue;
+        }
+
+        char *equals = strchr(text, '=');
+        if (!equals)
+            continue;
+
+        *equals = '\0';
+        char *key = trim(text);
+        char *value = trim(equals + 1);
+
+        if (section == SECTION_SAVES) {
+            char **new_paths = realloc(
+                config->s_paths.paths,
+                (config->s_paths.count + 1) * sizeof *config->s_paths.paths
+            );
+
+            if (!new_paths) {
+                success = 0;
+                break;
+            }
+
+            config->s_paths.paths = new_paths;
+            config->s_paths.paths[config->s_paths.count] = copy_string(value);
+
+            if (!config->s_paths.paths[config->s_paths.count]) {
+                success = 0;
+                break;
+            }
+
+            config->s_paths.count++;
+        } else if (section == SECTION_BACKUP &&
+                   strcmp(key, "bak_path") == 0) {
+            free(config->b_paths.bak_path);
+            config->b_paths.bak_path = copy_string(value);
+
+            if (!config->b_paths.bak_path) {
+                success = 0;
+                break;
+            }
+        }
     }
-    return cont_saves;
-}
-
-saves_path get_saves_paths(char *content){
-    
-}
-bak_path get_backup_paths(char *content){
-
-
+    fclose(file);
+    return success;
 }
 

@@ -1,6 +1,5 @@
-#ifndef PARSE_SV_F
-#define PARSE_SV_F
-
+#ifndef PARSE_SV_H
+#define PARSE_SV_H
 //[saves]
 //pcsx2=/home/fanty/.config/PCSX2/memcards/
 //ppsspp=/home/fanty/.config/ppsspp/PSP/SAVEDATA/
@@ -8,23 +7,26 @@
 //[backup]
 //bak_path=/mnt/hd_ext4/backup/saves/
 
-typedef struct{
-    char *pcsx2;
-    char *ppsspp;
-}saves_path;
-typedef struct{
-    char *f_back;
-    char *s_back;
-}bak_path;
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+typedef struct {
+    char **paths;
+    size_t count;
+} saves_path;
 
-typedef struct{
+typedef struct {
+    char *bak_path;
+} backup_path;
+
+typedef struct {
     saves_path s_paths;
-    bak_path b_paths;
-}config_file;
+    backup_path b_paths;
+} config_file;
 
-char* parse_to_saves(char *content_file);
-char* parse_to_bak(char *content_file);
-saves_path get_saves_paths(char *content);
-bak_path get_backup_paths(char *content);
-
+char *trim(char *s);
+char *copy_string(const char *s);
+int load_config(const char *filename, config_file *config);
 #endif//PARSE_SV_F
