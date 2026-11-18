@@ -29,7 +29,7 @@ fn main() -> io::Result<()> {
                 }
            },
            None => (),
-           _ => eprintln!("[ERROR]: undefined"),
+           _ => eprintln!("[ERROR]: check the config.ini file struct"),
         };
     }
     let mut origins :Vec<PathBuf> = Vec::new();
