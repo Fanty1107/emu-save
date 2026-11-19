@@ -42,8 +42,10 @@ pub fn copy_dir(origin : &Path, dest : &Path) -> io::Result<()>{
         let path_dest = dest.join(entry.file_name());
 
         if entry.file_type()?.is_dir(){
+            log_print(&format!("Copy dir: {}", path_origin.display()), true);
             copy_dir(&path_origin, &path_dest)?;
         }else if entry.file_type()?.is_file(){
+            log_print(&format!("Paste content in: {}", path_dest.display()), true);
             fs::copy(&path_origin, &path_dest)?;
         }
     }
