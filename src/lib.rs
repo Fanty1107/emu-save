@@ -49,3 +49,10 @@ pub fn copy_dir(origin : &Path, dest : &Path) -> io::Result<()>{
     }
     Ok(())
 }
+pub fn log_print(text:&str, is_ok:bool){
+    if is_ok{
+        println!("\x1b[32m[OK]\x1b[0m: {} ", text);
+    }else{
+        eprintln!("\x1b[31m[ERROR]\x1b[0m: {}", text);
+    }
+}
